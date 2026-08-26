@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laboratório de Elasticidade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EEF3F7;
+    --paper-line:#C7D3DE;
+    --ink:#16213E;
+    --ink-soft:#4C5A72;
+    --force:#D64550;
+    --elastic:#2E8B7C;
+    --warn:#E8A33D;
+    --panel:#FFFFFF;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      linear-gradient(var(--paper-line) 1px, transparent 1px) 0 0/28px 28px,
+      linear-gradient(90deg, var(--paper-line) 1px, transparent 1px) 0 0/28px 28px,
+      var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+    padding:18px 14px 40px;
+  }
+  .wrap{max-width:720px;margin:0 auto;}
+
+  header{margin-bottom:18px;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--elastic);
+    font-weight:600;
+    margin-bottom:6px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .eyebrow::before{content:"";width:18px;height:2px;background:var(--elastic);display:inline-block;}
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:clamp(26px,7vw,36px);
+    line-height:1.05;
+    margin:0 0 6px;
+    font-weight:700;
+  }
+  .sub{color:var(--ink-soft); font-size:14px; max-width:52ch;}
+
+  nav.tabs{
+    display:flex; gap:6px; margin:18px 0 16px;
+    background:var(--panel);
+    border:1px solid var(--paper-line);
+    border-radius:12px;
+    padding:4px;
+  }
+  nav.tabs button{
+    flex:1; border:none; background:transparent; cursor:pointer;
+    font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:13px;
+    padding:10px 6px; border-radius:9px; color:var(--ink-soft);
+    transition:background .15s, color .15s;
+  }
+  nav.tabs button.active{background:var(--ink); color:#fff;}
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--paper-line);
+    border-radius:var(--radius);
+    padding:18px;
+    margin-bottom:14px;
+    box-shadow:0 1px 0 rgba(22,33,62,0.03);
+  }
+  .panel h2{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:15px; margin:0 0 4px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .panel h2 .n{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px; color:#fff; background:var(--ink);
+    width:20px;height:20px;border-radius:50%;
+    display:inline-flex;align-items:center;justify-content:center;
+  }
+  .panel p.hint{color:var(--ink-soft); font-size:13px; margin:4px 0 14px;}
+
+  /* LAB */
+  .lab-grid{display:flex; flex-direction:column; gap:14px;}
+  .spring-stage{
+    background:
+      repeating-linear-gradient(0deg, transparent, transparent 19px, rgba(22,33,62,0.05) 20px);
+    border-radius:10px;
+    padding:6px 0;
+    display:flex; justify-content:center;
+  }
+  .readouts{
+    display:grid; grid-template-columns:1fr 1fr; gap:10px;
+  }
+  .readout{
+    background:var(--paper); border:1px solid var(--paper-line);
+    border-radius:10px; padding:10px 12px;
+  }
+  .readout .label{font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-soft); font-weight:600;}
+  .readout .val{font-family:'IBM Plex Mono',monospace; font-size:19px; font-weight:600; margin-top:2px;}
+  .readout.force .val{color:var(--force);}
+  .readout.ext .val{color:var(--elastic);}
+
+  .control-row{margin-top:6px;}
+  .control-row label{
+    display:flex; justify-content:space-between; font-size:12.5px; font-weight:600;
+    margin-bottom:6px; color:var(--ink-soft);
+  }
+  .control-row label span.v{font-family:'IBM Plex Mono',monospace; color:var(--ink);}
+  input[type=range]{
+    width:100%; -webkit-appearance:none; height:6px; border-radius:4px;
+    background:var(--paper-line); outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:20px;height:20px;border-radius:50%;
+    background:var(--ink); border:3px solid #fff; box-shadow:0 0 0 1px var(--paper-line);
+    cursor:pointer; margin-top:-7px;
+  }
+  select{
+    width:100%; padding:10px 12px; border-radius:9px; border:1px solid var(--paper-line);
+    background:#fff; font-family:'IBM Plex Sans',sans-serif; font-size:13.5px; font-weight:500;
+    color:var(--ink); margin-top:2px;
+  }
+  .warn-box{
+    margin-top:10px; background:#FDF3E3; border:1px solid var(--warn); color:#8a5a10;
+    border-radius:10px; padding:10px 12px; font-size:12.5px; display:none; gap:8px; align-items:flex-start;
+  }
+  .warn-box.show{display:flex;}
+  button.reset{
+    margin-top:10px; width:100%; padding:11px; border-radius:9px; border:none;
+    background:var(--ink); color:#fff; font-family:'Space Grotesk',sans-serif; font-weight:600;
+    font-size:13px; cursor:pointer;
+  }
+  button.reset:active{opacity:.85;}
+
+  .graph-wrap{margin-top:4px;}
+  svg text{font-family:'IBM Plex Mono',monospace;}
+
+  /* CHALLENGE */
+  .scenario{
+    background:var(--paper); border:1px dashed var(--paper-line); border-radius:10px;
+    padding:14px; font-size:14px; line-height:1.5; margin-bottom:12px;
+  }
+  .scenario b{color:var(--force);}
+  .guess-row{display:flex; gap:8px;}
+  .guess-row input{
+    flex:1; padding:11px 12px; border-radius:9px; border:1px solid var(--paper-line);
+    font-family:'IBM Plex Mono',monospace; font-size:15px;
+  }
+  .guess-row button{
+    padding:11px 16px; border-radius:9px; border:none; background:var(--elastic);
+    color:#fff; font-family:'Space Grotesk',sans-serif; font-weight:600; cursor:pointer;
+  }
+  .feedback{margin-top:12px; font-size:13.5px; border-radius:10px; padding:10px 12px; display:none;}
+  .feedback.ok{display:block; background:#E7F4F1; border:1px solid var(--elastic); color:#1f5c50;}
+  .feedback.bad{display:block; background:#FBEAEA; border:1px solid var(--force); color:#8a2530;}
+  .score-line{
+    display:flex; justify-content:space-between; align-items:center;
+    font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--ink-soft); margin-bottom:10px;
+  }
+  .score-line b{color:var(--ink); font-size:15px;}
+
+  /* QUIZ */
+  .q-progress{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink-soft); margin-bottom:8px;}
+  .q-text{font-size:15px; font-weight:600; margin-bottom:12px; line-height:1.4;}
+  .opt{
+    display:block; width:100%; text-align:left; padding:12px 14px; margin-bottom:8px;
+    border-radius:9px; border:1px solid var(--paper-line); background:#fff;
+    font-family:'IBM Plex Sans',sans-serif; font-size:13.5px; cursor:pointer; color:var(--ink);
+  }
+  .opt.correct{background:#E7F4F1; border-color:var(--elastic); color:#1f5c50; font-weight:600;}
+  .opt.wrong{background:#FBEAEA; border-color:var(--force); color:#8a2530; font-weight:600;}
+  .opt:disabled{cursor:default;}
+  .explain{
+    font-size:12.5px; color:var(--ink-soft); background:var(--paper); border-radius:9px;
+    padding:10px 12px; margin-top:6px; display:none;
+  }
+  .explain.show{display:block;}
+  .quiz-nav{display:flex; justify-content:flex-end; margin-top:12px;}
+  .quiz-nav button{
+    padding:10px 18px; border-radius:9px; border:none; background:var(--ink); color:#fff;
+    font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:13px; cursor:pointer;
+    display:none;
+  }
+  .quiz-nav button.show{display:block;}
+  .quiz-done{text-align:center; padding:10px;}
+  .quiz-done .score-big{font-family:'Space Grotesk',sans-serif; font-size:40px; font-weight:700; color:var(--elastic);}
+
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Física interativa · Lei de Hooke</div>
+    <h1>Laboratório de<br>Elasticidade</h1>
+    <p class="sub">Estique molas, quebre o limite elástico e descubra por que uma mola de aço e um elástico de borracha nunca se comportam do mesmo jeito.</p>
+  </header>
+
+  <nav class="tabs">
+    <button data-tab="lab" class="active">Laboratório</button>
+    <button data-tab="launch">Lançamento</button>
+    <button data-tab="quiz">Quiz</button>
+  </nav>
+
+  <!-- LAB -->
+  <section id="tab-lab" class="tab-panel active">
+    <div class="panel">
+      <h2><span class="n">1</span> Escolha o material</h2>
+      <p class="hint">Cada material tem uma constante elástica <b>k</b> diferente — quanto maior k, mais rígida a mola.</p>
+      <select id="material">
+        <option value="aco">Mola de aço rígida (k = 200 N/m)</option>
+        <option value="brinquedo">Mola de brinquedo (k = 40 N/m)</option>
+        <option value="borracha">Elástico de borracha (k = 15 N/m)</option>
+      </select>
+    </div>
+
+    <div class="panel">
+      <h2><span class="n">2</span> Pendure uma massa</h2>
+      <div class="control-row">
+        <label>Massa pendurada <span class="v" id="massVal">2.0 kg</span></label>
+        <input type="range" id="mass" min="0" max="5" step="0.1" value="2">
+      </div>
+
+      <div class="spring-stage">
+        <svg id="springSvg" width="220" height="260" viewBox="0 0 220 260"></svg>
+      </div>
+
+      <div class="readouts">
+        <div class="readout force">
+          <div class="label">Força peso (F = m·g)</div>
+          <div class="val" id="forceVal">19.6 N</div>
+        </div>
+        <div class="readout ext">
+          <div class="label">Deformação (x = F/k)</div>
+          <div class="val" id="extVal">9.8 cm</div>
+        </div>
+      </div>
+
+      <div class="warn-box" id="warnBox">
+        ⚠️ <div><b>Limite elástico ultrapassado!</b> A mola sofreu <b>deformação plástica</b> — ela não volta mais ao tamanho original, mesmo sem peso.</div>
+      </div>
+
+      <button class="reset" id="resetBtn">↺ Trocar por uma mola nova</button>
+    </div>
+
+    <div class="panel">
+      <h2><span class="n">3</span> Gráfico F × x</h2>
+      <p class="hint">Enquanto a mola está na região elástica, a reta é perfeita (Lei de Hooke). Depois do limite, ela sai da reta.</p>
+      <div class="graph-wrap">
+        <svg id="graphSvg" width="100%" height="200" viewBox="0 0 320 200" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- LAUNCH -->
+  <section id="tab-launch" class="tab-panel">
+    <div class="panel">
+      <h2><span class="n">1</span> Ajuste o lançador</h2>
+      <p class="hint">A energia elástica armazenada (E = ½·k·x²) vira energia cinética do projétil (E = ½·m·v²) no instante do disparo.</p>
+      <div class="control-row">
+        <label>Constante elástica k <span class="v" id="lkVal">80 N/m</span></label>
+        <input type="range" id="lk" min="20" max="200" step="5" value="80">
+      </div>
+      <div class="control-row">
+        <label>Distância esticada x <span class="v" id="lxVal">0.30 m</span></label>
+        <input type="range" id="lx" min="0.05" max="0.6" step="0.01" value="0.3">
+      </div>
+      <div class="control-row">
+        <label>Massa do projétil <span class="v" id="lmVal">0.30 kg</span></label>
+        <input type="range" id="lm" min="0.1" max="1.5" step="0.05" value="0.3">
+      </div>
+      <div class="control-row">
+        <label>Ângulo de lançamento <span class="v" id="laVal">45°</span></label>
+        <input type="range" id="la" min="10" max="80" step="1" value="45">
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="n">2</span> Trajetória</h2>
+      <div class="score-line">Alvo a <b id="targetDist">—</b> m &nbsp;·&nbsp; Acertos: <b id="hitScore">0</b></div>
+      <svg id="launchSvg" width="100%" height="220" viewBox="0 0 340 220" preserveAspectRatio="xMidYMid meet"></svg>
+      <button class="reset" id="launchBtn" style="background:var(--force);">🚀 Lançar</button>
+      <div class="feedback" id="launchFeedback"></div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="n">3</span> Física do lançamento</h2>
+      <div class="readouts">
+        <div class="readout force"><div class="label">Energia elástica</div><div class="val" id="energyVal">0 J</div></div>
+        <div class="readout ext"><div class="label">Velocidade inicial</div><div class="val" id="v0Val">0 m/s</div></div>
+        <div class="readout force"><div class="label">Altura máxima</div><div class="val" id="hmaxVal">0 m</div></div>
+        <div class="readout ext"><div class="label">Alcance estimado</div><div class="val" id="rangeVal">0 m</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- QUIZ -->
+  <section id="tab-quiz" class="tab-panel">
+    <div class="panel" id="quizPanel"></div>
+  </section>
+
+</div>
+
+<script>
+/* ---------- DADOS ---------- */
+const G = 9.8;
+const MATERIALS = {
+  aco:        {name:"Mola de aço rígida", k:200, xLimit:0.20, color:"#4C5A72"},
+  brinquedo:  {name:"Mola de brinquedo",  k:40,  xLimit:0.45, color:"#2E8B7C"},
+  borracha:   {name:"Elástico de borracha", k:15, xLimit:0.55, color:"#D64550"}
+};
+
+/* ---------- TABS ---------- */
+const tabButtons = document.querySelectorAll('nav.tabs button');
+tabButtons.forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    tabButtons.forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* ---------- LAB STATE ---------- */
+let currentMaterialKey = 'aco';
+let deformed = false;
+let permanentX = 0;
+let history = [];
+
+const materialSel = document.getElementById('material');
+const massSlider = document.getElementById('mass');
+const massVal = document.getElementById('massVal');
+const forceVal = document.getElementById('forceVal');
+const extVal = document.getElementById('extVal');
+const warnBox = document.getElementById('warnBox');
+const resetBtn = document.getElementById('resetBtn');
+const springSvg = document.getElementById('springSvg');
+const graphSvg = document.getElementById('graphSvg');
+
+function springPath(x1,y1,x2,y2,coils){
+  // zigzag spring path between two points
+  const dx = x2-x1, dy = y2-y1;
+  const len = Math.sqrt(dx*dx+dy*dy);
+  const segLen = len/(coils*2);
+  const nx = -dy/len, ny = dx/len; // normal
+  const amp = 16;
+  let d = `M ${x1} ${y1}`;
+  for(let i=1;i<=coils*2;i++){
+    const t = i/(coils*2);
+    const px = x1+dx*t, py = y1+dy*t;
+    const side = (i%2===0)?1:-1;
+    const ox = nx*amp*side, oy = ny*amp*side;
+    d += ` L ${px+ox} ${py+oy}`;
+  }
+  d += ` L ${x2} ${y2}`;
+  return d;
+}
+
+function drawSpring(x_m, isDeformed){
+  // visual scale: meters -> pixels
+  const baseLen = 60;   // natural spring length px
+  const scale = 260;    // px per meter of extension (visual exaggeration)
+  const stretchPx = Math.min(x_m*scale, 165);
+  const topY = 14, ceilY = 14;
+  const springTop = topY;
+  const springBottom = springTop + baseLen + stretchPx;
+  const massTop = springBottom;
+  const massH = 34;
+  const cx = 110;
+
+  const mat = MATERIALS[currentMaterialKey];
+  const wireColor = isDeformed ? "#E8A33D" : mat.color;
+
+  let svg = '';
+  // ceiling
+  svg += `<rect x="40" y="0" width="140" height="10" fill="${'#16213E'}" rx="2"/>`;
+  svg += `<line x1="55" y1="10" x2="40" y2="0" stroke="#16213E" stroke-width="2"/>`;
+  for(let i=45;i<175;i+=14){
+    svg += `<line x1="${i}" y1="10" x2="${i-8}" y2="22" stroke="#C7D3DE" stroke-width="2"/>`;
+  }
+  // spring
+  svg += `<path d="${springPath(cx,springTop,cx,springBottom,9)}" fill="none" stroke="${wireColor}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`;
+  // mass block
+  svg += `<rect x="${cx-26}" y="${massTop}" width="52" height="${massH}" rx="6" fill="${isDeformed?'#E8A33D':'#16213E'}"/>`;
+  svg += `<text x="${cx}" y="${massTop+massH/2+4}" fill="#fff" font-size="11" font-weight="600" text-anchor="middle">${massSlider.value} kg</text>`;
+  // extension ruler tick
+  svg += `<line x1="${cx+45}" y1="${springTop+baseLen}" x2="${cx+45}" y2="${springBottom}" stroke="${mat.color}" stroke-width="1.5" stroke-dasharray="3,3"/>`;
+  svg += `<line x1="${cx+40}" y1="${springTop+baseLen}" x2="${cx+50}" y2="${springTop+baseLen}" stroke="${mat.color}" stroke-width="1.5"/>`;
+  svg += `<line x1="${cx+40}" y1="${springBottom}" x2="${cx+50}" y2="${springBottom}" stroke="${mat.color}" stroke-width="1.5"/>`;
+
+  springSvg.innerHTML = svg;
+  springSvg.setAttribute('viewBox', `0 0 220 ${Math.max(260, massTop+massH+20)}`);
+}
+
+function computeAndRender(){
+  const mat = MATERIALS[currentMaterialKey];
+  const m = parseFloat(massSlider.value);
+  massVal.textContent = m.toFixed(1)+' kg';
+  const F = m*G;
+  forceVal.textContent = F.toFixed(1)+' N';
+
+  let x_m;
+  if(!deformed){
+    x_m = F/mat.k;
+    if(x_m > mat.xLimit){
+      // crosses into plastic zone now
+      deformed = true;
+      permanentX = mat.xLimit + (x_m - mat.xLimit)*0.6; // permanent set
+      x_m = permanentX;
+      warnBox.classList.add('show');
+    }
+  } else {
+    // already deformed: extension can only grow a bit further, never shrink below permanent set
+    const elasticPart = F/mat.k;
+    x_m = Math.max(permanentX, elasticPart);
+    warnBox.classList.add('show');
+  }
+
+  extVal.textContent = (x_m*100).toFixed(1)+' cm';
+  drawSpring(x_m, deformed);
+
+  // record history point (cap 10)
+  history.push({F, x:x_m, deformed});
+  if(history.length>10) history.shift();
+  drawGraph();
+}
+
+function drawGraph(){
+  const mat = MATERIALS[currentMaterialKey];
+  const W=320,H=200,pad=34;
+  const maxF = Math.max(mat.k*mat.xLimit*1.6, ...history.map(p=>p.F), 10);
+  const maxX = Math.max(mat.xLimit*1.6, ...history.map(p=>p.x), 0.05);
+
+  const sx = x => pad + (x/maxX)*(W-pad-10);
+  const sy = F => H-pad - (F/maxF)*(H-pad-10);
+
+  let svg = '';
+  // axes
+  svg += `<line x1="${pad}" y1="${H-pad}" x2="${W-10}" y2="${H-pad}" stroke="#C7D3DE" stroke-width="1"/>`;
+  svg += `<line x1="${pad}" y1="${H-pad}" x2="${pad}" y2="10" stroke="#C7D3DE" stroke-width="1"/>`;
+  svg += `<text x="${W-14}" y="${H-pad+14}" font-size="9" fill="#4C5A72" text-anchor="end">x (m)</text>`;
+  svg += `<text x="${pad-6}" y="14" font-size="9" fill="#4C5A72" text-anchor="end">F (N)</text>`;
+
+  // elastic theoretical line (Hooke) up to limit
+  const x1=0, y1=sy(0), x2=mat.xLimit, y2=sy(mat.k*mat.xLimit);
+  svg += `<line x1="${sx(x1)}" y1="${y1}" x2="${sx(x2)}" y2="${y2}" stroke="${mat.color}" stroke-width="2"/>`;
+  // dashed continuation (plastic region hint)
+  svg += `<line x1="${sx(x2)}" y1="${y2}" x2="${sx(maxX*0.98)}" y2="${sy(mat.k*mat.xLimit*0.55)}" stroke="#E8A33D" stroke-width="2" stroke-dasharray="4,3"/>`;
+  // elastic limit marker
+  svg += `<circle cx="${sx(mat.xLimit)}" cy="${y2}" r="3.5" fill="#E8A33D"/>`;
+  svg += `<text x="${sx(mat.xLimit)}" y="${y2-8}" font-size="8.5" fill="#8a5a10" text-anchor="middle">limite elástico</text>`;
+
+  // history points
+  history.forEach((p,i)=>{
+    const op = 0.3 + 0.7*(i/history.length);
+    svg += `<circle cx="${sx(p.x)}" cy="${sy(p.F)}" r="4" fill="${p.deformed?'#E8A33D':'#D64550'}" opacity="${op}"/>`;
+  });
+
+  graphSvg.innerHTML = svg;
+}
+
+materialSel.addEventListener('change', ()=>{
+  currentMaterialKey = materialSel.value;
+  deformed=false; permanentX=0; history=[];
+  warnBox.classList.remove('show');
+  computeAndRender();
+});
+massSlider.addEventListener('input', computeAndRender);
+resetBtn.addEventListener('click', ()=>{
+  deformed=false; permanentX=0; history=[];
+  warnBox.classList.remove('show');
+  computeAndRender();
+});
+computeAndRender();
+
+/* ---------- LANÇAMENTO ---------- */
+const lk = document.getElementById('lk');
+const lx = document.getElementById('lx');
+const lm = document.getElementById('lm');
+const la = document.getElementById('la');
+const lkVal = document.getElementById('lkVal');
+const lxVal = document.getElementById('lxVal');
+const lmVal = document.getElementById('lmVal');
+const laVal = document.getElementById('laVal');
+const energyVal = document.getElementById('energyVal');
+const v0Val = document.getElementById('v0Val');
+const hmaxVal = document.getElementById('hmaxVal');
+const rangeVal = document.getElementById('rangeVal');
+const launchSvg = document.getElementById('launchSvg');
+const launchBtn = document.getElementById('launchBtn');
+const launchFeedback = document.getElementById('launchFeedback');
+const targetDistEl = document.getElementById('targetDist');
+const hitScoreEl = document.getElementById('hitScore');
+
+let target = 0, hitScore = 0, animating = false;
+let liveCalc = {E:0,v0:0,hmax:0,range:0,angleRad:0};
+
+function newTarget(){
+  target = Math.round(8 + Math.random()*55);
+  targetDistEl.textContent = target;
+}
+
+function computeLaunch(){
+  const k = parseFloat(lk.value);
+  const x = parseFloat(lx.value);
+  const m = parseFloat(lm.value);
+  const angleDeg = parseFloat(la.value);
+  const angleRad = angleDeg*Math.PI/180;
+
+  lkVal.textContent = k+' N/m';
+  lxVal.textContent = x.toFixed(2)+' m';
+  lmVal.textContent = m.toFixed(2)+' kg';
+  laVal.textContent = angleDeg+'°';
+
+  const E = 0.5*k*x*x;                       // energia elástica
+  const v0 = Math.sqrt(2*E/m);                // conservação de energia -> velocidade
+  const range = (v0*v0*Math.sin(2*angleRad))/G;
+  const hmax = Math.pow(v0*Math.sin(angleRad),2)/(2*G);
+
+  energyVal.textContent = E.toFixed(1)+' J';
+  v0Val.textContent = v0.toFixed(1)+' m/s';
+  hmaxVal.textContent = hmax.toFixed(1)+' m';
+  rangeVal.textContent = range.toFixed(1)+' m';
+
+  liveCalc = {E,v0,hmax,range,angleRad};
+  if(!animating) drawStatic();
+}
+
+function metersScale(){
+  const maxSpan = Math.max(liveCalc.range, target, 12)*1.15;
+  return { scale: (320)/maxSpan, maxSpan };
+}
+
+function drawGroundAndTarget(scale){
+  let svg='';
+  const groundY=190, launchX=16;
+  svg += `<line x1="0" y1="${groundY}" x2="340" y2="${groundY}" stroke="#C7D3DE" stroke-width="1.5"/>`;
+  // meter ticks every ~10m
+  const step = liveCalc.range>60 || target>60 ? 20 : 10;
+  const maxSpan = metersScale().maxSpan;
+  for(let d=0; d<maxSpan; d+=step){
+    const px = launchX + d*scale;
+    if(px>335) break;
+    svg += `<line x1="${px}" y1="${groundY}" x2="${px}" y2="${groundY+4}" stroke="#C7D3DE" stroke-width="1"/>`;
+    svg += `<text x="${px}" y="${groundY+15}" font-size="8" fill="#4C5A72" text-anchor="middle">${d}m</text>`;
+  }
+  // launcher base
+  svg += `<rect x="${launchX-6}" y="${groundY-8}" width="16" height="8" rx="2" fill="#16213E"/>`;
+  // target flag
+  const tx = launchX + target*scale;
+  svg += `<line x1="${tx}" y1="${groundY}" x2="${tx}" y2="${groundY-34}" stroke="#4C5A72" stroke-width="2"/>`;
+  svg += `<path d="M ${tx} ${groundY-34} L ${tx+16} ${groundY-28} L ${tx} ${groundY-22} Z" fill="#D64550"/>`;
+  return svg;
+}
+
+function drawStatic(){
+  const {scale} = metersScale();
+  let svg = drawGroundAndTarget(scale);
+  launchSvg.innerHTML = svg;
+}
+
+function animateLaunch(){
+  if(animating) return;
+  animating = true;
+  launchFeedback.className='feedback';
+  launchFeedback.textContent='';
+
+  const {v0, angleRad, range} = liveCalc;
+  const tTotal = (2*v0*Math.sin(angleRad))/G;
+  const {scale} = metersScale();
+  const groundY = 190, launchX = 16;
+  const animDuration = 1500; // ms, visual pacing independent of real flight time
+  const start = performance.now();
+
+  function frame(now){
+    const f = Math.min((now-start)/animDuration, 1);
+    const t = f*tTotal;
+    const x = v0*Math.cos(angleRad)*t;
+    const y = Math.max(0, v0*Math.sin(angleRad)*t - 0.5*G*t*t);
+    let svg = drawGroundAndTarget(scale);
+    // trail
+    const trailPoints = 14;
+    for(let i=0;i<=trailPoints;i++){
+      const tt = (i/trailPoints)*t;
+      const tx = v0*Math.cos(angleRad)*tt;
+      const ty = Math.max(0, v0*Math.sin(angleRad)*tt - 0.5*G*tt*tt);
+      svg += `<circle cx="${launchX+tx*scale}" cy="${groundY-ty*scale}" r="1.6" fill="#D64550" opacity="${0.15+0.5*(i/trailPoints)}"/>`;
+    }
+    svg += `<circle cx="${launchX+x*scale}" cy="${groundY-y*scale}" r="6" fill="#D64550"/>`;
+    launchSvg.innerHTML = svg;
+
+    if(f<1){
+      requestAnimationFrame(frame);
+    } else {
+      animating = false;
+      checkHit(range);
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+function checkHit(range){
+  const tol = Math.max(target*0.1, 2.5);
+  const hit = Math.abs(range-target) <= tol;
+  if(hit){
+    hitScore++;
+    hitScoreEl.textContent = hitScore;
+    launchFeedback.className='feedback ok';
+    launchFeedback.textContent = `🎯 Alvo atingido! Alcance real: ${range.toFixed(1)} m (alvo em ${target} m).`;
+    setTimeout(newTarget, 1600);
+  } else if(range<target){
+    launchFeedback.className='feedback bad';
+    launchFeedback.textContent = `Ficou curto: ${range.toFixed(1)} m contra ${target} m de alvo. Aumente k, x, ou ajuste o ângulo perto de 45°.`;
+  } else {
+    launchFeedback.className='feedback bad';
+    launchFeedback.textContent = `Passou do alvo: ${range.toFixed(1)} m contra ${target} m. Reduza a energia (k ou x) ou o ângulo.`;
+  }
+}
+
+[lk,lx,lm,la].forEach(el=>el.addEventListener('input', computeLaunch));
+launchBtn.addEventListener('click', animateLaunch);
+newTarget();
+computeLaunch();
+
+/* ---------- QUIZ ---------- */
+const QUESTIONS = [
+  {
+    q:"A Lei de Hooke é representada pela fórmula:",
+    opts:["F = k·x","F = m·a","F = k/x","F = m·g·x"],
+    correct:0,
+    explain:"F = k·x: a força aplicada é proporcional à deformação x, sendo k a constante elástica da mola."
+  },
+  {
+    q:"No Sistema Internacional, a constante elástica k é medida em:",
+    opts:["Watts (W)","Newtons por metro (N/m)","Joules (J)","Pascal (Pa)"],
+    correct:1,
+    explain:"k relaciona força (N) com deformação (m), então sua unidade é N/m — quanto maior, mais rígida a mola."
+  },
+  {
+    q:"O que diferencia deformação elástica de deformação plástica?",
+    opts:[
+      "Não há diferença, são sinônimos",
+      "A elástica é reversível; a plástica é permanente",
+      "A plástica só acontece em líquidos",
+      "A elástica só ocorre em metais"
+    ],
+    correct:1,
+    explain:"Na região elástica o material volta ao formato original ao remover a força. Além do limite elástico, a deformação se torna permanente (plástica)."
+  },
+  {
+    q:"A energia potencial elástica armazenada em uma mola é dada por:",
+    opts:["E = k·x", "E = m·g·h", "E = ½·k·x²", "E = k²·x"],
+    correct:2,
+    explain:"A energia potencial elástica é E = ½·k·x² — dobrar a deformação quadruplica a energia armazenada."
+  },
+  {
+    q:"Duas molas idênticas em tamanho, mas de materiais diferentes, esticam quantidades diferentes sob o mesmo peso. Isso acontece porque:",
+    opts:[
+      "Elas têm massas diferentes",
+      "Elas têm constantes elásticas (k) diferentes",
+      "A gravidade age diferente em cada uma",
+      "Uma delas não obedece à física"
+    ],
+    correct:1,
+    explain:"O material e a espessura do fio definem a rigidez da mola — ou seja, seu k. Mais rígido = menos deformação para a mesma força."
+  },
+  {
+    q:"Se uma mola for esticada além do seu limite elástico e depois solta, o que acontece?",
+    opts:[
+      "Ela volta exatamente ao tamanho original",
+      "Ela fica com um comprimento maior que o original, permanentemente",
+      "Ela encolhe abaixo do tamanho original",
+      "Nada muda no material"
+    ],
+    correct:1,
+    explain:"Passado o limite elástico, as ligações internas do material se rearranjam de forma irreversível — a mola fica 'esticada' mesmo sem carga."
+  }
+];
+let qIndex=0, qScore=0, answered=false;
+const quizPanel = document.getElementById('quizPanel');
+
+function renderQuiz(){
+  if(qIndex>=QUESTIONS.length){
+    quizPanel.innerHTML = `
+      <div class="quiz-done">
+        <div class="eyebrow" style="justify-content:center;">Resultado</div>
+        <div class="score-big">${qScore}/${QUESTIONS.length}</div>
+        <p class="hint">${qScore===QUESTIONS.length ? 'Perfeito! Você domina a Lei de Hooke.' : qScore>=QUESTIONS.length/2 ? 'Muito bom! Revise os pontos que errou.' : 'Vale revisitar o Laboratório para fixar os conceitos.'}</p>
+        <button class="reset" style="max-width:220px;margin:10px auto 0;" onclick="restartQuiz()">↺ Refazer quiz</button>
+      </div>`;
+    return;
+  }
+  const item = QUESTIONS[qIndex];
+  answered=false;
+  quizPanel.innerHTML = `
+    <div class="q-progress">Pergunta ${qIndex+1} de ${QUESTIONS.length} · Acertos: ${qScore}</div>
+    <div class="q-text">${item.q}</div>
+    <div id="optsWrap"></div>
+    <div class="explain" id="explainBox"></div>
+    <div class="quiz-nav"><button id="nextBtn">Próxima →</button></div>
+  `;
+  const optsWrap = document.getElementById('optsWrap');
+  item.opts.forEach((opt,i)=>{
+    const b = document.createElement('button');
+    b.className='opt';
+    b.textContent = opt;
+    b.addEventListener('click', ()=>selectOpt(i));
+    optsWrap.appendChild(b);
+  });
+  document.getElementById('nextBtn').addEventListener('click', ()=>{ qIndex++; renderQuiz(); });
+}
+function selectOpt(i){
+  if(answered) return;
+  answered=true;
+  const item = QUESTIONS[qIndex];
+  const opts = document.querySelectorAll('#optsWrap .opt');
+  opts.forEach((el,idx)=>{
+    el.disabled=true;
+    if(idx===item.correct) el.classList.add('correct');
+    else if(idx===i) el.classList.add('wrong');
+  });
+  if(i===item.correct) qScore++;
+  document.getElementById('explainBox').textContent = item.explain;
+  document.getElementById('explainBox').classList.add('show');
+  document.getElementById('nextBtn').classList.add('show');
+}
+function restartQuiz(){ qIndex=0; qScore=0; renderQuiz(); }
+renderQuiz();
+</script>
+</body>
+</html>
